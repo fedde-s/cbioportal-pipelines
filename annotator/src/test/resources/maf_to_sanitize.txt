@@ -1,0 +1,7 @@
+# this is a comment line!
+Chromosome	Reference_Allele	Variant_Classification	Tumor_Seq_Allele2	NCBI_Build	Tumor_Seq_Allele1	Start_position	End_position	Custom	Hugo_Symbol
+11	T	Missense_Mutation	C	37	T	56258437	56258437	custom_data	TP53
+23	G	Silent	A	37	G	83788017		custom_data	EGFR
+X	G	Nonsense_Mutation	A	37	G	906209	906210	custom_data	Unknown
+chr24			DELREPLACE					corrupt_data
+chr1	GTGGCAGGAGCACTCCAGATGGCAGGCGGCTCC	In_Frame_Del	-	37	GTGGCAGGAGCACTCCAGATGGCAGGCGGCTCC	3411011	3411043	custom_data	PTEN
