@@ -158,13 +158,13 @@ public class ZScoresConverterImpl implements Converter {
 		if (LOG.isInfoEnabled()) {
 			LOG.info("createStagingFile(), writing staging file.");
 		}
-		fileUtils.writeZScoresStagingFile(portalMetadata.getStagingDirectory(), cancerStudyMetadata, datatypeMetadata, dependenciesMetadata);
+		boolean success = fileUtils.writeZScoresStagingFile(portalMetadata.getStagingDirectory(), cancerStudyMetadata, datatypeMetadata, dependenciesMetadata);
 
 		if (LOG.isInfoEnabled()) {
 			LOG.info("createStagingFile(), complete.");
 		}
 
-		if (datatypeMetadata.requiresMetafile()){
+		if (datatypeMetadata.requiresMetafile() && success){
 			if (LOG.isInfoEnabled()) {
 				LOG.info("createStagingFile(), writing metadata file.");
 			}
