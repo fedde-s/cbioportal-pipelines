@@ -276,7 +276,7 @@ public class MethylationConverterImpl implements Converter {
 		if (LOG.isInfoEnabled()) {
 			LOG.info("createStagingFile(), sorting column headers");
 		}
-		columnHeaders = dataMatrixMethylationData.getColumnHeaders();
+		columnHeaders = dataMatrixMethylationData.getColumnHeadersFiltered();
 		columnHeaders.remove(Converter.GENE_SYMBOL_COLUMN_HEADER_NAME);
 		columnHeaders.add(0, Converter.GENE_SYMBOL_COLUMN_HEADER_NAME);
 		columnHeaders.remove(Converter.GENE_ID_COLUMN_HEADER_NAME);

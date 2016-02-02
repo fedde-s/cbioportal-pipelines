@@ -27,12 +27,8 @@ import org.mskcc.cbio.portal.web_api.ConnectionManager;
 
 import org.apache.commons.logging.*;
 import org.apache.commons.httpclient.*;
-import org.apache.commons.httpclient.auth.*;
 import org.apache.commons.httpclient.params.*;
 import org.apache.commons.httpclient.methods.*;
-
-import org.jsoup.*;
-import org.jsoup.nodes.*;
 
 import org.springframework.beans.factory.annotation.Value;
 
@@ -107,62 +103,41 @@ public class BiotabFetcherImpl extends FetcherBaseImpl implements Fetcher
 		if (urls.length != filenames.length) {
 			throw new IllegalArgumentException("Mismatched tcga.clinical.url and tcga.clinical.filename");
 		}
+        Pattern p = Pattern.compile("<a href=.+>(nationwidechildrens\\.org.*)</a>");
         for (String tumorType : config.getTumorTypesToDownload()) {
-			for (int lc = 0; lc < urls.length; lc++) {
-				int latestRevision = getRevision(urls[lc], filenames[lc], tumorType);
-				if (latestRevision != NO_REVISION_FOUND) {
-					saveClinicalForTumorType(urls[lc], filenames[0], filenames[lc], tumorType, Integer.toString(latestRevision));
-					break;
-				} 
-			}
+	for (int lc = 0; lc < urls.length; lc++) {
+                            saveClinicalForTumorType(getURLToFileIndex(urls[lc],tumorType),tumorType, p);
+                            break;			
+	}
         }
-    }
-    
-    private int getRevision(String url, String clinicalFilename, String tumorType)
-    {
-        Integer latestRevision = NO_REVISION_FOUND;
-        Pattern revisionPattern = getRevisionPattern(clinicalFilename, tumorType);
-
-        try {
-            Document doc = Jsoup.connect(getURLToFileIndex(url, tumorType)).timeout(READ_TIMEOUT).get();
-            for (Element link : doc.select("a[href]")) {
-                Matcher revisionMatcher = revisionPattern.matcher(link.text());
-                if (revisionMatcher.find()) {
-                    Integer thisRevision = Integer.parseInt(revisionMatcher.group(1));
-                    if (thisRevision > latestRevision) {
-                        latestRevision = thisRevision;
-                    }
-                }
-            }
-        }
-        catch(Exception e) {
-            logMessage(LOG, "getRevision(), skipping, tumorType: " + tumorType);
-            logMessage(LOG, e.getMessage());
-        }
-
-        return latestRevision;
-    }
+    }      
 
     private String getURLToFileIndex(String url, String tumorType)
     {
         return (url.replace(TUMOR_TYPE_REGEX, tumorType.toLowerCase()));
     }
 
-    private Pattern getRevisionPattern(String clinicalFilename, String tumorType)
-    {
-        return Pattern.compile(clinicalFilename.replace(TUMOR_TYPE_REGEX, tumorType.toUpperCase()).replace(REVISION_REGEX, "(\\d)") + "$");
-    }
-
-    private void saveClinicalForTumorType(String url, String nationwideClinicalFilename, String clinicalFilename, String tumorType, String revision)
+    private void saveClinicalForTumorType(String url, String tumorType, Pattern p)
     {
         HttpClient client = getHttpClient();
         HttpMethodParams params = client.getParams();
         params.setSoTimeout(READ_TIMEOUT);
-        GetMethod method = new GetMethod(getURLToFile(url, clinicalFilename, tumorType, revision));
+        GetMethod method = new GetMethod(getURLToFileIndex(url, tumorType));
 
         try {
             if (client.executeMethod(method) == HttpStatus.SC_OK) {
-                saveClinicalData(nationwideClinicalFilename, tumorType, revision, method.getResponseBodyAsStream());
+                String line;
+                BufferedReader bufReader = new BufferedReader(new InputStreamReader(method.getResponseBodyAsStream()));
+                while((line = bufReader.readLine()) != null) {
+                    Matcher m = p.matcher(line);
+                    if (m.find()) {
+                        String urlToDownload = url + m.group(1);
+                        GetMethod fileDownloadMethod = new GetMethod(urlToDownload);
+                        if(client.executeMethod(fileDownloadMethod) == HttpStatus.SC_OK) {
+                            saveClinicalData(m.group(1), tumorType, fileDownloadMethod.getResponseBodyAsStream());
+                        }
+                    }
+                }
             }
         }
         catch (Exception e) {}
@@ -178,25 +153,19 @@ public class BiotabFetcherImpl extends FetcherBaseImpl implements Fetcher
         return new HttpClient(connectionManager);
     }
 
-    private String getURLToFile(String url, String clinicalFilename, String tumorType, String revision)
+    private void saveClinicalData(String clinicalFilename, String tumorType, InputStream is) throws Exception
     {
-        return (url.replace(TUMOR_TYPE_REGEX, tumorType.toLowerCase()) +
-                clinicalFilename.replace(TUMOR_TYPE_REGEX, tumorType.toUpperCase()).replace(REVISION_REGEX, revision));
-    }
-
-    private void saveClinicalData(String clinicalFilename, String tumorType, String revision, InputStream is) throws Exception
-    {
-        File clinicalDataFile =  fileUtils.createFileFromStream(getDestinationFilename(clinicalFilename, tumorType, revision), is);
+        File clinicalDataFile =  fileUtils.createFileFromStream(getDestinationFilename(clinicalFilename,tumorType), is);
         createImportDataRecord(clinicalFilename, clinicalDataFile, tumorType);
     }
 
-    private String getDestinationFilename(String clinicalFilename, String tumorType, String revision) throws Exception
+    private String getDestinationFilename(String clinicalFilename, String tumorType) throws Exception
     {
         return (getDownloadDirectory() +
                 File.separator +
                 tumorType +
                 File.separator +
-                clinicalFilename.replace(TUMOR_TYPE_REGEX, tumorType.toUpperCase()).replace(REVISION_REGEX, revision));
+                clinicalFilename.replace(TUMOR_TYPE_REGEX, tumorType.toUpperCase()));
     }
 
     private String getDownloadDirectory() throws Exception
@@ -216,16 +185,14 @@ public class BiotabFetcherImpl extends FetcherBaseImpl implements Fetcher
         String computedDigest = fileUtils.getMD5Digest(clinicalDataFile);
         for (DatatypeMetadata datatype : config.getFileDatatype(dataSourceMetadata, clinicalFilename)) {
             if (!datatype.isDownloaded()) continue;
-            for (String archivedFile : datatype.getTCGAArchivedFiles(clinicalFilename)) {
-                ImportDataRecord importDataRecord = new ImportDataRecord(dataSourceMetadata.getDataSource(),
+            ImportDataRecord importDataRecord = new ImportDataRecord(dataSourceMetadata.getDataSource(),
                                                                          "tcga",
                                                                          tumorType, tumorType,
                                                                          datatype.getDatatype(),
                                                                          Fetcher.LATEST_RUN_INDICATOR,
                                                                          clinicalDataFile.getCanonicalPath(),
-                                                                         computedDigest, archivedFile);
+                                                                         computedDigest, clinicalFilename);
                 importDataRecordDAO.importDataRecord(importDataRecord);
-            }
         }
     }
 }

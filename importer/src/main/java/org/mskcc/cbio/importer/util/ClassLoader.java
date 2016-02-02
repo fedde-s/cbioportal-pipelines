@@ -50,10 +50,12 @@ public class ClassLoader {
 		if (methodName == null || methodName.length() == 0) {
 			throw new IllegalArgumentException("methodName must not be null");
 		}
-
+		
+		/* Clogs up the log
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("getMethod(), className:methodName " + className + ":" + methodName);
 		}
+		*/
 		
 		Method toReturn = null;
 		try {
@@ -90,10 +92,12 @@ public class ClassLoader {
 		if (className == null || className.length() == 0) {
 			throw new IllegalArgumentException("className must not be null");
 		}
-
+		
+		/* Clogs up the log
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("getInstance(), className: " + className);
 		}
+		*/
 
 		try {
 			Class<?> clazz = Class.forName(className);

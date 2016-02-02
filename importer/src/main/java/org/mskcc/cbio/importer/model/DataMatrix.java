@@ -319,6 +319,17 @@ public class DataMatrix {
 		return toReturn;
 	}
 
+    public List<String> getColumnHeadersFiltered() {
+        LinkedList<String> toReturn = new LinkedList<String>();
+		for (ColumnHeader columnHeader : columnHeaders) {
+            if (columnHeader.ignoreColumn) continue;
+			toReturn.add(columnHeader.label);
+		}
+
+		// outta here
+		return toReturn;
+    }
+
 	/**
 	 * Gets the data for a given column name.  Returns
 	 * the data stored in the internal data structure,

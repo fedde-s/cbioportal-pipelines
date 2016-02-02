@@ -363,15 +363,17 @@ public class TCGASurvivalDataCalculator implements SurvivalDataCalculator
         List<String> osStatus = initializeList(canonicalPatientList.size());
         for (String patientId : survivalData.keySet()) {
             int osStatusIndex = canonicalPatientList.indexOf(patientId);
-            SurvivalData sd = survivalData.get(patientId);
-            if (VitalStatusAlive.has(sd.vitalStatus)) {
-                osStatus.set(osStatusIndex, VitalStatusAlive.LIVING.toString());
-            }
-            else if (VitalStatusDead.has(sd.vitalStatus)) {
-                osStatus.set(osStatusIndex, VitalStatusDead.DECEASED.toString());
-            }
-            else {
-                osStatus.set(osStatusIndex, ClinicalAttribute.NA);
+            if (osStatusIndex != -1) {
+                SurvivalData sd = survivalData.get(patientId);
+                if (VitalStatusAlive.has(sd.vitalStatus)) {
+                    osStatus.set(osStatusIndex, VitalStatusAlive.LIVING.toString());
+                }
+                else if (VitalStatusDead.has(sd.vitalStatus)) {
+                    osStatus.set(osStatusIndex, VitalStatusDead.DECEASED.toString());
+                }
+                else {
+                    osStatus.set(osStatusIndex, ClinicalAttribute.NA);
+                }
             }
         }
         return osStatus;
@@ -382,18 +384,19 @@ public class TCGASurvivalDataCalculator implements SurvivalDataCalculator
         List<String> osStatusMonths = initializeList(canonicalPatientList.size());
         for (String patientId : survivalData.keySet()) {
             int osStatusMonthsIndex = canonicalPatientList.indexOf(patientId);
-            SurvivalData sd = survivalData.get(patientId);
-            if (VitalStatusAlive.has(sd.vitalStatus)) {
-                osStatusMonths.set(osStatusMonthsIndex, convertDaysToMonths(sd.lastFollowUp, sd.lastKnownAlive));
-            }
-            else if (VitalStatusDead.has(sd.vitalStatus)) {
-                osStatusMonths.set(osStatusMonthsIndex, convertDaysToMonths(sd.daysToDeath));
-            }
-            else {
-                osStatusMonths.set(osStatusMonthsIndex, ClinicalAttribute.NA);
+            if (osStatusMonthsIndex != -1) {
+                SurvivalData sd = survivalData.get(patientId);
+                if (VitalStatusAlive.has(sd.vitalStatus)) {
+                    osStatusMonths.set(osStatusMonthsIndex, convertDaysToMonths(sd.lastFollowUp, sd.lastKnownAlive));
+                }
+                else if (VitalStatusDead.has(sd.vitalStatus)) {
+                    osStatusMonths.set(osStatusMonthsIndex, convertDaysToMonths(sd.daysToDeath));
+                }
+                else {
+                    osStatusMonths.set(osStatusMonthsIndex, ClinicalAttribute.NA);
+                }
             }
         }
-
         return osStatusMonths;
     }
 
@@ -509,17 +512,19 @@ public class TCGASurvivalDataCalculator implements SurvivalDataCalculator
         List<String> dfStatus = initializeList(canonicalPatientList.size());
         for (String patientId : diseaseFreeData.keySet()) {
             int dfStatusIndex = canonicalPatientList.indexOf(patientId);
-            DiseaseFreeData df = diseaseFreeData.get(patientId);
-            if (patientIsDiseaseFree(df)) {
-                dfStatus.set(dfStatusIndex, DiseaseFreeStatus.DISEASE_FREE.toString());
-            }
-            else {
-                try {
-                    Integer.parseInt(df.daysToNewTumorEventAfterInitialTreatment);
-                    dfStatus.set(dfStatusIndex, DiseaseFreeStatus.DISEASED.toString());
+            if (dfStatusIndex != -1) {
+                DiseaseFreeData df = diseaseFreeData.get(patientId);
+                if (patientIsDiseaseFree(df)) {
+                    dfStatus.set(dfStatusIndex, DiseaseFreeStatus.DISEASE_FREE.toString());
                 }
-                catch(NumberFormatException e) {
-                    dfStatus.set(dfStatusIndex, ClinicalAttribute.NA);
+                else {
+                    try {
+                        Integer.parseInt(df.daysToNewTumorEventAfterInitialTreatment);
+                        dfStatus.set(dfStatusIndex, DiseaseFreeStatus.DISEASED.toString());
+                    }
+                    catch(NumberFormatException e) {
+                        dfStatus.set(dfStatusIndex, ClinicalAttribute.NA);
+                    }
                 }
             }
         }
@@ -531,21 +536,22 @@ public class TCGASurvivalDataCalculator implements SurvivalDataCalculator
         List<String> dfStatusMonths = initializeList(canonicalPatientList.size());
         for (String patientId : diseaseFreeData.keySet()) {
             int dfStatusMonthsIndex = canonicalPatientList.indexOf(patientId);
-            DiseaseFreeData df = diseaseFreeData.get(patientId);
-            try {
-                if (patientIsDiseaseFree(df)) {
-                    dfStatusMonths.set(dfStatusMonthsIndex, convertDaysToMonths(df.lastFollowUp, df.lastKnownAlive));
+            if (dfStatusMonthsIndex != -1) {
+                DiseaseFreeData df = diseaseFreeData.get(patientId);
+                try {
+                    if (patientIsDiseaseFree(df)) {
+                        dfStatusMonths.set(dfStatusMonthsIndex, convertDaysToMonths(df.lastFollowUp, df.lastKnownAlive));
+                    }
+                    else {
+                        int dfStatusDays = Integer.parseInt(df.daysToNewTumorEventAfterInitialTreatment);
+                        dfStatusMonths.set(dfStatusMonthsIndex, convertDaysToMonths(Integer.toString(dfStatusDays)));
+                    }
                 }
-                else {
-                    int dfStatusDays = Integer.parseInt(df.daysToNewTumorEventAfterInitialTreatment);
-                    dfStatusMonths.set(dfStatusMonthsIndex, convertDaysToMonths(Integer.toString(dfStatusDays)));
+                catch(NumberFormatException e) {
+                    dfStatusMonths.set(dfStatusMonthsIndex, ClinicalAttribute.NA);
                 }
-            }
-            catch(NumberFormatException e) {
-                dfStatusMonths.set(dfStatusMonthsIndex, ClinicalAttribute.NA);
             }
         }
-
         return dfStatusMonths;
     }
 

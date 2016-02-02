@@ -122,6 +122,13 @@ public class CopyNumberSegmentConverterImpl implements Converter {
 		}
 		DataMatrix dataMatrix = dataMatrices[0];
 
+        dataMatrix.renameColumn("Sample", "ID");
+        dataMatrix.renameColumn("Chromosome", "chrom");
+        dataMatrix.renameColumn("Start", "loc.start");
+        dataMatrix.renameColumn("End", "loc.end");
+        dataMatrix.renameColumn("Num_Probes", "num.mark");
+        dataMatrix.renameColumn("Segment_Mean", "seg.mean");
+        
 		if (LOG.isInfoEnabled()) {
 			LOG.info("createStagingFile(), writing staging file.");
 		}

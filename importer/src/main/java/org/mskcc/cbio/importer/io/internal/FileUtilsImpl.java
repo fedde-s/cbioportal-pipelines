@@ -32,6 +32,7 @@ import org.mskcc.cbio.portal.model.*;
 import org.mskcc.cbio.portal.scripts.*;
 import org.mskcc.cbio.liftover.Hg18ToHg19;
 import org.mskcc.cbio.portal.util.CancerStudyReader;
+import org.mskcc.cbio.portal.util.StableIdUtil;
 import org.mskcc.cbio.mutassessor.MutationAssessorTool;
 
 import org.apache.commons.io.*;
@@ -337,9 +338,9 @@ public class FileUtilsImpl implements org.mskcc.cbio.importer.FileUtils
 
         // determine path to file (does override file exist?)
         String fileCanonicalPath = importDataRecord.getCanonicalPathToData();
-
+            
         // data can be compressed
-		if (GzipUtils.isCompressedFilename(fileCanonicalPath.toLowerCase())) {
+            if (GzipUtils.isCompressedFilename(fileCanonicalPath.toLowerCase())) {
             if (LOG.isInfoEnabled()) {
                 LOG.info("getDataMatrices(): processing file: " + fileCanonicalPath);
             }
@@ -792,9 +793,13 @@ public class FileUtilsImpl implements org.mskcc.cbio.importer.FileUtils
 			writer.print("cancer_study_identifier: " + cancerStudyMetadata.getStableId() + "\n");
 			writer.print("genetic_alteration_type: " + datatypeMetadata.getMetaGeneticAlterationType() + "\n");
 			writer.print("datatype: " + datatypeMetadata.getMetaDatatypeType() + "\n");
-			String stableID = datatypeMetadata.getMetaStableID();
-			stableID = stableID.replaceAll(DatatypeMetadata.CANCER_STUDY_TAG, cancerStudyMetadata.toString());
-			writer.print("stable_id: " + stableID + "\n");
+            writer.print("data_filename: " + datatypeMetadata.getStagingFilename() + "\n");
+            if (!datatypeMetadata.getStagingFilename().startsWith(DatatypeMetadata.TCGA_CLINICAL_STAGING_FILENAME_PREFIX) &&
+                !datatypeMetadata.getStagingFilename().endsWith(DatatypeMetadata.SEGMENT_FILE_STAGING_FILENAME_SUFFIX)) {
+                String stableID = datatypeMetadata.getMetaStableID();
+                stableID = stableID.replaceAll(DatatypeMetadata.CANCER_STUDY_TAG, cancerStudyMetadata.toString());
+                writer.print("stable_id: " + stableID + "\n");
+            }
 			writer.print("show_profile_in_analysis_tab: " + datatypeMetadata.getMetaShowProfileInAnalysisTab() + "\n");
 			String profileDescription = datatypeMetadata.getMetaProfileDescription();
 			if (dataMatrix != null) {
@@ -838,6 +843,8 @@ public class FileUtilsImpl implements org.mskcc.cbio.importer.FileUtils
 			}
 			profileDescription = profileDescription.replaceAll(DatatypeMetadata.TUMOR_TYPE_TAG, cancerStudyMetadata.getTumorType());
 			writer.print("description: " + profileDescription + "\n");
+            writer.print("genetic_alteration_type: " + datatypeMetadata.getMetaGeneticAlterationType() + "\n");
+			writer.print("datatype: " + datatypeMetadata.getMetaDatatypeType() + "\n");
 			String cnaSegFilename = datatypeMetadata.getStagingFilename().replaceAll(DatatypeMetadata.CANCER_STUDY_TAG, cancerStudyMetadata.toString());
 			writer.print("data_filename: " + cnaSegFilename + "\n");
 			writer.flush();
@@ -863,6 +870,30 @@ public class FileUtilsImpl implements org.mskcc.cbio.importer.FileUtils
 		FileOutputStream out = org.apache.commons.io.FileUtils.openOutputStream(stagingFile, false);
 		dataMatrix.write(out);
 		IOUtils.closeQuietly(out);
+
+        if (stagingFilename.startsWith(DatatypeMetadata.TCGA_CLINICAL_STAGING_FILENAME_PREFIX)) {
+            String metadata = MetadataUtils.getClinicalMetadataHeaders(config, dataMatrix.getColumnHeadersFiltered(), true, stagingFile.getCanonicalPath());
+            out = org.apache.commons.io.FileUtils.openOutputStream(stagingFile, false);
+            PrintWriter writer = new PrintWriter(out);
+            String[] metadataLines = metadata.split("\n");
+            writer.println(metadataLines[0]);
+            writer.println(metadataLines[1]);
+            writer.println(metadataLines[2]);
+            // fix incorrect annotations in clinical_attributes worksheet
+            if (stagingFilename.contains("patient")) {
+                metadataLines[3] = metadataLines[3].replaceAll("SAMPLE", "PATIENT");
+            }
+            else {
+                metadataLines[3] = metadataLines[3].replaceAll("PATIENT", "SAMPLE");
+            }
+            writer.println(metadataLines[3]);
+            writer.println(metadataLines[4]);
+            writer.flush();
+            writer.close();
+            out = org.apache.commons.io.FileUtils.openOutputStream(stagingFile, true);
+            dataMatrix.write(out);
+            IOUtils.closeQuietly(out);
+        }
 	}
 
 	@Override
@@ -1488,24 +1519,27 @@ public class FileUtilsImpl implements org.mskcc.cbio.importer.FileUtils
 		Map<String,String> probeIdMap = initProbMap(methylationCorrelation);
 
         int count = -1;
+		ArrayList<Integer> indexes = new ArrayList<Integer>();
         while (it.hasNext()) {
             // first row is our column heading, create column vector
             if (++count == 0) {
-                columnNames = new LinkedList(Arrays.asList(it.nextLine().split(Converter.VALUE_DELIMITER, -1)));
+                columnNames = normalizeTcgaBarcodes(new LinkedList(Arrays.asList(it.nextLine().split(Converter.VALUE_DELIMITER, -1))));
+				indexes = getBarcodeIndexes(columnNames);
             }
             // all other rows are rows in the table
             else {
                 rowData = (rowData == null) ? new LinkedList<LinkedList<String>>() : rowData;
                 LinkedList<String> thisRow = new LinkedList(Arrays.asList(it.nextLine().split(Converter.VALUE_DELIMITER, -1)));
-                if (processingBCRClinicalFile(dataFilename) && skipClinicalDataRow(thisRow)) {
+				int indexOfBarcode = (columnNames.indexOf("bcr_patient_barcode") == -1) ? columnNames.indexOf("bcr_sample_barcode") : columnNames.indexOf("bcr_patient_barcode");
+                if (processingBCRClinicalFile(dataFilename) && skipClinicalDataRow(thisRow, indexOfBarcode)) {
                     continue;
                 }
                 if (methylationCorrelation == null) {
-                    rowData.add(thisRow);
+                    rowData.add(normalizeTcgaBarcodes(thisRow, indexes));
                 }
                 // first line in methylation file is probeID
                 else if (probeIdMap.containsKey(thisRow.getFirst())) {
-                    rowData.add(thisRow);
+                    rowData.add(normalizeTcgaBarcodes(thisRow, indexes));
                 }
             }
         }
@@ -1589,11 +1623,67 @@ public class FileUtilsImpl implements org.mskcc.cbio.importer.FileUtils
         return (dataFilename.startsWith(DatatypeMetadata.BCR_CLINICAL_FILENAME_PREFIX));
     }
 
-    private boolean skipClinicalDataRow(LinkedList<String> row)
+    private boolean skipClinicalDataRow(LinkedList<String> row, int indexOfBarcode)
     {
-        return (!row.getFirst().startsWith("TCGA") && !row.getFirst().startsWith(ClinicalAttributesNamespace.CDE_TAG));
+        boolean skip = true;
+		
+		// indexOfBarcode contains -1 if barcode was not a column in the file.
+        if (indexOfBarcode != -1) {
+            skip = (!row.get(indexOfBarcode).startsWith("TCGA") || row.getFirst().startsWith(ClinicalAttributesNamespace.CDE_TAG));
+        }
+        return skip;
     }
 
+    private LinkedList<String> normalizeTcgaBarcodes(LinkedList<String> thisRow)
+    {
+        LinkedList<String> toReturn = new LinkedList<String>();
+        for (String item : thisRow)
+        {
+            Pattern p = StableIdUtil.TCGA_SAMPLE_BARCODE_REGEX;
+            Matcher matcher = p.matcher(item);
+            if(matcher.find()) {
+                toReturn.add(matcher.group(1));
+                continue;
+            }
+           toReturn.add(item);
+        }
+        return toReturn;
+    }
+
+    private LinkedList<String> normalizeTcgaBarcodes(LinkedList<String> thisRow, ArrayList<Integer> indexes)
+    {
+        if (indexes.size() > 0) {
+            Pattern p = StableIdUtil.TCGA_SAMPLE_BARCODE_REGEX;
+			for (Integer index : indexes) {
+				Matcher matcher = p.matcher(thisRow.get(index));
+				if(matcher.find()) {
+					thisRow.set(index, matcher.group(1));
+				}
+			}
+        }
+        return thisRow;
+    }
+	private ArrayList<Integer> getBarcodeIndexes(List<String> columnNames) {
+		ArrayList<Integer> indexes = new ArrayList<Integer>();
+
+		if (columnNames.indexOf("bcr_patient_barcode") >= 0) {
+			indexes.add(columnNames.indexOf("bcr_patient_barcode"));
+		}
+		if (columnNames.indexOf("bcr_sample_barcode") >= 0) {
+			indexes.add(columnNames.indexOf("bcr_sample_barcode"));
+		}
+		if (columnNames.indexOf("Sample") >= 0) {
+			indexes.add(columnNames.indexOf("Sample"));
+		}
+		if (columnNames.indexOf("Tumor_Sample_Barcode") >= 0) {
+			indexes.add(columnNames.indexOf("Tumor_Sample_Barcode"));
+		}
+		if (columnNames.indexOf("Matched_Norm_Sample_Barcode") >= 0) {
+			indexes.add(columnNames.indexOf("Matched_Norm_Sample_Barcode"));
+		}
+
+		return indexes;
+	}
     private void logMessage(Log log, String message)
     {
         if (log.isInfoEnabled()) {
