@@ -269,13 +269,13 @@
 	<dependency>
 	  <groupId>org.mskcc.cbio</groupId>
 	  <artifactId>core</artifactId>
-	  <version>${project.version}</version>
+      <version>${cbioportal.core.version}</version>
 	</dependency>	
 
 	<dependency>
 	  <groupId>org.mskcc.cbio</groupId>
 	  <artifactId>business</artifactId>
-	  <version>${project.version}</version>
+      <version>${cbioportal.core.version}</version>
 	</dependency>	
 
 	<dependency>

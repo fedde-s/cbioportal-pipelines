@@ -905,10 +905,6 @@ class GDataImpl implements Config {
 
         Collection<Object> toReturn = new ArrayList<Object>();
 
-        if (LOG.isInfoEnabled()) {
-            LOG.info("getMetadataCollection(): " + className);
-        }
-
         // we start at one, because row 0 is the column headers
         for (int lc = 1; lc < metadataMatrix.size(); lc++) {
             Object[] args = {metadataMatrix.get(lc).toArray(new String[0])};

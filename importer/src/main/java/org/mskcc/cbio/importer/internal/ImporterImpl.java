@@ -423,7 +423,7 @@ class ImporterImpl implements Importer {
 					LOG.info("loadStagingFiles(), Importing cancer study metafile: " + cancerStudyMetadataFile);
 				}
 				ImportCancerStudy.main(args);
-				DaoCancerStudy.setStatus(DaoCancerStudy.Status.UNAVAILABLE, cancerStudyMetadata.getStableId());
+				//DaoCancerStudy.setStatus(DaoCancerStudy.Status.UNAVAILABLE, cancerStudyMetadata.getStableId());
 
 				// iterate over all datatypes
 				for (DatatypeMetadata datatypeMetadata : config.getDatatypeMetadata(portalMetadata, cancerStudyMetadata)) {
@@ -495,7 +495,7 @@ class ImporterImpl implements Importer {
 				}
 
 				importCaseLists(portalMetadata, cancerStudyMetadata);
-				DaoCancerStudy.setStatus(DaoCancerStudy.Status.AVAILABLE, cancerStudyMetadata.getStableId());
+				//DaoCancerStudy.setStatus(DaoCancerStudy.Status.AVAILABLE, cancerStudyMetadata.getStableId());
 		}
 		finally {
 			if (createdCancerStudyMetadataFile) fileUtils.deleteFile(new File(cancerStudyMetadataFile));

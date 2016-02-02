@@ -110,10 +110,24 @@ public class ClinicalDataConverterImpl extends ConverterBaseImpl implements Conv
 
         processPatientMatrix(cancerStudyMetadata, patientMatrix, followUps);
         processSampleMatrix(cancerStudyMetadata, sampleMatrix);
-        mergeSampleIntoPatientMatrix(patientMatrix, sampleMatrix);
 
         logMessage(LOG, "createStagingFile(), writing staging file.");
+        datatypeMetadata.setStagingFilename(datatypeMetadata.getStagingFilename().replaceAll(".txt", "_patient.txt"));
         fileUtils.writeStagingFile(portalMetadata.getStagingDirectory(), cancerStudyMetadata, datatypeMetadata, patientMatrix);
+        if (datatypeMetadata.requiresMetafile()){
+            logMessage(LOG, "createStagingFile(), writing metadata file.");
+            datatypeMetadata.setMetaFilename(datatypeMetadata.getMetaFilename().replaceAll(".txt", "_patient.txt"));
+            datatypeMetadata.setMetaStableID(datatypeMetadata.getMetaStableID().replaceAll("_clinical", "_patient_clinical"));
+            fileUtils.writeMetadataFile(portalMetadata.getStagingDirectory(), cancerStudyMetadata, datatypeMetadata, null);
+        }
+        datatypeMetadata.setStagingFilename(datatypeMetadata.getStagingFilename().replaceAll("_patient.txt", "_sample.txt"));
+        fileUtils.writeStagingFile(portalMetadata.getStagingDirectory(), cancerStudyMetadata, datatypeMetadata, sampleMatrix);
+        if (datatypeMetadata.requiresMetafile()){
+            logMessage(LOG, "createStagingFile(), writing metadata file.");
+            datatypeMetadata.setMetaFilename(datatypeMetadata.getMetaFilename().replaceAll("_patient.txt", "_sample.txt"));
+            datatypeMetadata.setMetaStableID(datatypeMetadata.getMetaStableID().replaceAll("_patient_clinical", "_sample_clinical"));
+            fileUtils.writeMetadataFile(portalMetadata.getStagingDirectory(), cancerStudyMetadata, datatypeMetadata, null);
+        }
         logMessage(LOG, "createStagingFile(), complete.");
     }
 

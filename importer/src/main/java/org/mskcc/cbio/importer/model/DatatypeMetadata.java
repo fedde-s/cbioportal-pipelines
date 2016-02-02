@@ -36,11 +36,13 @@ public class DatatypeMetadata {
 	public static final String CANCER_STUDY_TAG = "<CANCER_STUDY>";
     public static final String CLINICAL_FOLLOWUP_VERSION = "<FOLLOWUP_VERSION>";
     // this will match both patient and nte followup files - which is ok.
+    public static final String TCGA_CLINICAL_STAGING_FILENAME_PREFIX = "data_bcr_clinical_data";
     public static final Pattern CLINICAL_FOLLOWUP_FILE_REGEX = Pattern.compile("nationwidechildrens.org_clinical_follow_up_v(\\d\\.\\d+)_\\w+\\.txt");
     public static final Pattern CLINICAL_PATIENT_FILE_REGEX = Pattern.compile("nationwidechildrens.org_clinical_patient_(\\w+)\\.txt");
     public static final Pattern CLINICAL_NTE_FILE_REGEX = Pattern.compile("nationwidechildrens.org_clinical_nte_(\\w+)\\.txt");
     public static final Pattern CLINICAL_NTE_FOLLOWUP_FILE_REGEX = Pattern.compile("nationwidechildrens.org_clinical_follow_up_v(\\d\\.\\d+)_nte_\\w+\\.txt");
     public static final Pattern CLINICAL_SAMPLE_FILE_REGEX = Pattern.compile("nationwidechildrens.org_biospecimen_sample_(\\w+)\\.txt");
+    public static final String SEGMENT_FILE_STAGING_FILENAME_SUFFIX = ".seg";
 	
 	// delimiter when specifying datatypes on worksheet
     public static final String DATATYPES_DELIMITER = ":"; 
@@ -181,12 +183,15 @@ public class DatatypeMetadata {
 		return new LinkedHashSet<String>();
 	}
 	public String getStagingFilename() { return stagingFilename; }
+    public void setStagingFilename(String stagingFilename) { this.stagingFilename = stagingFilename; }
 	public String getConverterClassName() { return converterClassName; }
 	public String getImporterClassName() { return importerClassName; }
 
 	public Boolean requiresMetafile() { return requiresMetafile; }
 	public String getMetaFilename() { return metaFilename; }
+    public void setMetaFilename(String metaFilename) { this.metaFilename = metaFilename; }
 	public String getMetaStableID() { return metaStableID; }
+    public void setMetaStableID(String metaStableID) { this.metaStableID = metaStableID; }
 	public String getMetaGeneticAlterationType() { return metaGeneticAlterationType; }
 	public String getMetaDatatypeType() { return metaDatatypeType; }
 	public Boolean getMetaShowProfileInAnalysisTab() { return metaShowProfileInAnalysisTab; }

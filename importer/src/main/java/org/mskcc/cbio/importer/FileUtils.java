@@ -234,6 +234,7 @@ public interface FileUtils {
 	void writeStagingFile(String stagingDirectory, CancerStudyMetadata cancerStudyMetadata,
 						  DatatypeMetadata datatypeMetadata, DataMatrix dataMatrix) throws Exception;
 
+
 	/**
 	 * Creates a staging file for mutation data (and meta file) with contents from the given DataMatrix.
 	 * This is called when the mutation file needs to be run through the Annotator and Mutation Assessor Tools.
