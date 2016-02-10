@@ -885,6 +885,7 @@ public class FileUtilsImpl implements org.mskcc.cbio.importer.FileUtils
             }
             else {
                 metadataLines[3] = metadataLines[3].replaceAll("PATIENT", "SAMPLE");
+                metadataLines[3] = metadataLines[3].replaceFirst("SAMPLE", "PATIENT");
             }
             writer.println(metadataLines[3]);
             writer.println(metadataLines[4]);

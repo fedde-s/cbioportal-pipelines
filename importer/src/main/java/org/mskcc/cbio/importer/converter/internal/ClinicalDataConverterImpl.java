@@ -109,7 +109,7 @@ public class ClinicalDataConverterImpl extends ConverterBaseImpl implements Conv
         }
 
         processPatientMatrix(cancerStudyMetadata, patientMatrix, followUps);
-        processSampleMatrix(cancerStudyMetadata, sampleMatrix);
+        processSampleMatrix(cancerStudyMetadata, sampleMatrix, patientMatrix);
 
         logMessage(LOG, "createStagingFile(), writing staging file.");
         datatypeMetadata.setStagingFilename(datatypeMetadata.getStagingFilename().replaceAll(".txt", "_patient.txt"));
@@ -303,7 +303,7 @@ public class ClinicalDataConverterImpl extends ConverterBaseImpl implements Conv
         return missingAttributes;
     }
 
-    private void processSampleMatrix(CancerStudyMetadata cancerStudyMetadata, DataMatrix sampleMatrix)
+    private void processSampleMatrix(CancerStudyMetadata cancerStudyMetadata, DataMatrix sampleMatrix, DataMatrix patientMatrix) throws Exception
     {
         Map<String, ClinicalAttributesMetadata> clinicalAttributes =
             getClinicalAttributes(sampleMatrix.getColumnHeaders(), false);
@@ -311,6 +311,24 @@ public class ClinicalDataConverterImpl extends ConverterBaseImpl implements Conv
                                              removeUnknownColumnsFromMatrix(sampleMatrix, clinicalAttributes));
 		combineColumns(sampleMatrix);
         normalizeHeaders(sampleMatrix, clinicalAttributes);
+        addPatientIDColumn(sampleMatrix, patientMatrix);
+    }
+
+    private void addPatientIDColumn(DataMatrix sampleMatrix, DataMatrix patientMatrix) throws Exception
+    {
+        Pattern patientPattern = Pattern.compile("^(TCGA-\\w\\w-\\w\\w\\w\\w)-\\d\\d.*$");
+        List<String> patientIDs = new ArrayList<String>();
+        for (String sampleID : sampleMatrix.getColumnData("SAMPLE_ID").get(0)) {
+            Matcher matcher = patientPattern.matcher(sampleID);
+            if (matcher.find()) {
+                patientIDs.add(matcher.group(1));
+            }
+        }
+        sampleMatrix.addColumn("PATIENT_ID", patientIDs);
+        List<String> headers = sampleMatrix.getColumnHeaders();
+        headers.remove("PATIENT_ID");
+        headers.add(0, "PATIENT_ID");
+        sampleMatrix.setColumnOrder(headers);
     }
 
     private void mergeSampleIntoPatientMatrix(DataMatrix patientMatrix, DataMatrix sampleMatrix)
