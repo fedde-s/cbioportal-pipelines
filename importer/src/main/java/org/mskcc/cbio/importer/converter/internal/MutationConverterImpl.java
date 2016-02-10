@@ -157,6 +157,8 @@ public class MutationConverterImpl implements Converter {
 				LOG.info("createStagingFile(), file requires a run through the Annotator and OMA tool.");
 			}
 			fileUtils.writeMutationStagingFile(portalMetadata.getStagingDirectory(), cancerStudyMetadata, datatypeMetadata, dataMatrix);
+            // add entrez back in
+            addEntrez(stagingFilename, portalMetadata.getStagingDirectory(), cancerStudyMetadata);
 		}
 
 		if (LOG.isInfoEnabled()) {
@@ -170,4 +172,41 @@ public class MutationConverterImpl implements Converter {
 			fileUtils.writeMetadataFile(portalMetadata.getStagingDirectory(), cancerStudyMetadata, datatypeMetadata, dataMatrix);
 		}	
 	}
+
+    private void addEntrez(String stagingFilename, String stagingDirectory, CancerStudyMetadata cancerStudyMetadata) throws Exception
+    {
+        File stagingFile = org.apache.commons.io.FileUtils.getFile(stagingDirectory,
+                                                                   cancerStudyMetadata.getStudyPath(),
+                                                                   stagingFilename);
+        org.apache.commons.io.LineIterator it = fileUtils.getFileContents("file:///" + stagingFile.getCanonicalPath());
+        try {
+            StringBuilder fileSB = new StringBuilder();
+            stagingFile.delete();
+            boolean processHeader = true;
+            while (it.hasNext()) {
+                String line = it.nextLine();
+                if (line.startsWith("#")) {
+                    fileSB.append(line + "\n");
+                }
+                else if (processHeader) {
+                    fileSB.append(line + "\n");
+                    processHeader = false;
+                }
+                else {
+                    StringBuilder lineSB = new StringBuilder();
+                    String[] parts = line.split("\t");
+                    parts[1] = idMapper.symbolToEntrezID(parts[0]);
+                    for (int lc = 0; lc < parts.length-1; lc++) {
+                        lineSB.append(parts[lc] + "\t");
+                    }
+                    lineSB.append(parts[parts.length-1] + "\n");
+                    fileSB.append(lineSB.toString());
+                }
+            }
+            fileUtils.createFileWithContents(stagingFile.getCanonicalPath(), fileSB.toString());
+        }
+        finally {
+            org.apache.commons.io.LineIterator.closeQuietly(it);
+        }
+    }
 }
