@@ -37,9 +37,6 @@ public class DAOGeneOptimizedIDMapper implements IDMapper {
 	// our logger
 	private static final Log LOG = LogFactory.getLog(DAOGeneOptimizedIDMapper.class);
 
-	// identifier for start of miRNA
-	private static final String MIRNA_PREFIX = "hsa-";
-
 	// ref to DAOGeneOptimized
 	DaoGeneOptimized daoGeneOptimized;
 
@@ -60,12 +57,11 @@ public class DAOGeneOptimizedIDMapper implements IDMapper {
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("symbolToEntrez(): " + geneSymbol);
 		}
-		if (geneSymbol.startsWith(MIRNA_PREFIX) ||
-			geneSymbol.startsWith(MIRNA_PREFIX.toUpperCase())) {
-			return geneSymbol;
-		}
 		CanonicalGene gene = guessGene(geneSymbol);
-		return (gene != null) ? Long.toString(gene.getEntrezGeneId()) : "";
+        if (gene != null && gene.getEntrezGeneId() > 0) {
+            return Long.toString(gene.getEntrezGeneId());
+        }
+        return "";
 	}
 
 	/**

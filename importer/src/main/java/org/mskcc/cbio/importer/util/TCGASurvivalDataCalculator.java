@@ -291,7 +291,7 @@ public class TCGASurvivalDataCalculator implements SurvivalDataCalculator
         }
 
         assert true == false : String.format("returnHigherPrecendenceString, %s, %s", value1, value2);
-        return MissingAttributeValues.MISSING.toString();
+        return MissingAttributeValues.getNotAvailable();
     }
 
     private boolean oneStringEmpty(String value1, String value2)
@@ -336,7 +336,7 @@ public class TCGASurvivalDataCalculator implements SurvivalDataCalculator
         }
 
         assert true == false : String.format("returnHigherPrecendenceMissingAttribute, %s, %s", value1, value2);
-        return MissingAttributeValues.MISSING.toString();
+        return MissingAttributeValues.getNotAvailable();
     }
 
     private void mergeSurvivalData(Map<String,SurvivalData> sourceMap, Map<String, SurvivalData> destMap)
@@ -372,7 +372,7 @@ public class TCGASurvivalDataCalculator implements SurvivalDataCalculator
                     osStatus.set(osStatusIndex, VitalStatusDead.DECEASED.toString());
                 }
                 else {
-                    osStatus.set(osStatusIndex, ClinicalAttribute.NA);
+                    osStatus.set(osStatusIndex, MissingAttributeValues.getNotAvailable());
                 }
             }
         }
@@ -393,7 +393,7 @@ public class TCGASurvivalDataCalculator implements SurvivalDataCalculator
                     osStatusMonths.set(osStatusMonthsIndex, convertDaysToMonths(sd.daysToDeath));
                 }
                 else {
-                    osStatusMonths.set(osStatusMonthsIndex, ClinicalAttribute.NA);
+                    osStatusMonths.set(osStatusMonthsIndex, MissingAttributeValues.getNotAvailable());
                 }
             }
         }
@@ -405,7 +405,7 @@ public class TCGASurvivalDataCalculator implements SurvivalDataCalculator
         if (sdValues.length == 1)
         {
             return (MissingAttributeValues.has(sdValues[0])) ? 
-                    ClinicalAttribute.MISSING :
+                MissingAttributeValues.getNotAvailable() :
                     convertDaysToMonthsAsString(Integer.parseInt(sdValues[0]));
         }
         else if (sdValues.length == 2)
@@ -413,7 +413,7 @@ public class TCGASurvivalDataCalculator implements SurvivalDataCalculator
             boolean sdValue0Missing = MissingAttributeValues.has(sdValues[0]);
             boolean sdValue1Missing = MissingAttributeValues.has(sdValues[1]);
             if (sdValue0Missing && sdValue1Missing) {
-                return ClinicalAttribute.NA;
+                return MissingAttributeValues.getNotAvailable();
             }
             else if (!sdValue0Missing && sdValue1Missing) {
                 return convertDaysToMonthsAsString(Integer.parseInt(sdValues[0]));
@@ -427,7 +427,7 @@ public class TCGASurvivalDataCalculator implements SurvivalDataCalculator
             }
         }
 
-        return ClinicalAttribute.NA;
+        return MissingAttributeValues.getNotAvailable();
     }
 
     private String convertDaysToMonthsAsString(int days)
@@ -523,7 +523,7 @@ public class TCGASurvivalDataCalculator implements SurvivalDataCalculator
                         dfStatus.set(dfStatusIndex, DiseaseFreeStatus.DISEASED.toString());
                     }
                     catch(NumberFormatException e) {
-                        dfStatus.set(dfStatusIndex, ClinicalAttribute.NA);
+                        dfStatus.set(dfStatusIndex, MissingAttributeValues.getNotAvailable());
                     }
                 }
             }
@@ -548,7 +548,7 @@ public class TCGASurvivalDataCalculator implements SurvivalDataCalculator
                     }
                 }
                 catch(NumberFormatException e) {
-                    dfStatusMonths.set(dfStatusMonthsIndex, ClinicalAttribute.NA);
+                    dfStatusMonths.set(dfStatusMonthsIndex, MissingAttributeValues.getNotAvailable());
                 }
             }
         }

@@ -116,7 +116,7 @@ public class MapperUtil {
 			if (LOG.isDebugEnabled()) {
 				LOG.debug("doMapping(), target: " + target);
 			}
-			if (target == "") {
+			if (target == "" && mappingDirection == MappingDirection.ID_TO_SYMBOL) {
 				if (LOG.isDebugEnabled()) {
 					LOG.debug("doMapping(), cannot find target for src: " + src + ", ignoring row: " + lc);
 				}
